@@ -1,0 +1,23 @@
+appId: com.ucopp.fincop
+productName: FINCOP
+copyright: Copyright © 2026 FINCOP — Finansial Ucopp
+directories:
+  output: release
+  buildResources: public
+files:
+  - dist/**/*
+  - dist-electron/**/*
+  - prisma/**/*
+  - package.json
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  artifactName: FINCOP-Setup-${version}.${ext}
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: FINCOP

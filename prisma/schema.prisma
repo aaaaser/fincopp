@@ -1,0 +1,516 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// ENUMS
+// ============================================================================
+
+enum ThemeMode {
+  LIGHT
+  DARK
+}
+
+enum WalletType {
+  BANK
+  CASH
+  EWALLET
+  OTHER
+}
+
+enum TransferStatus {
+  COMPLETED
+  CANCELLED
+}
+
+enum RecurringPeriod {
+  WEEKLY
+  MONTHLY
+  YEARLY
+}
+
+enum RecurringPaymentStatus {
+  PENDING
+  PAID
+  OVERDUE
+}
+
+enum DebtType {
+  DEBT       // Utang: kewajiban saya kepada pihak lain
+  RECEIVABLE // Piutang: kewajiban pihak lain kepada saya
+}
+
+enum DebtStatus {
+  UNPAID
+  PARTIAL
+  PAID
+  OVERDUE
+}
+
+enum StreamPlatform {
+  TIKTOK
+  YOUTUBE
+  OTHER
+}
+
+enum QueueStatus {
+  WAITING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum CashFlowDirection {
+  INFLOW
+  OUTFLOW
+}
+
+enum LedgerClassification {
+  INITIAL_BALANCE
+  BALANCE_ADJUSTMENT
+  INCOME
+  EXPENSE
+  RECURRING_PAYMENT
+  TRANSFER_IN
+  TRANSFER_OUT
+  DEBT_DISBURSEMENT       // Menerima pinjaman baru (uang masuk)
+  DEBT_REPAYMENT          // Membayar cicilan/pelunasan utang (uang keluar)
+  RECEIVABLE_DISBURSEMENT // Memberikan pinjaman baru (uang keluar)
+  RECEIVABLE_REPAYMENT    // Menerima pembayaran cicilan piutang (uang masuk)
+  DONATION
+}
+
+enum CashReferenceType {
+  WALLET
+  WALLET_TRANSFER
+  INCOME
+  EXPENSE
+  RECURRING_EXPENSE_PAYMENT
+  DEBT
+  DEBT_PAYMENT
+  DONATION
+}
+
+enum NotificationType {
+  RECURRING_UPCOMING
+  RECURRING_DUE
+  RECURRING_OVERDUE
+  DEBT_UPCOMING
+  DEBT_OVERDUE
+  RECEIVABLE_UPCOMING
+  RECEIVABLE_OVERDUE
+}
+
+enum BackupType {
+  MANUAL
+  AUTO
+  PRE_RESTORE
+}
+
+enum BackupScheduleFrequency {
+  DAILY
+  WEEKLY
+  MONTHLY
+}
+
+enum BackupStatus {
+  SUCCESS
+  FAILED
+}
+
+// ============================================================================
+// 1. APP SETTINGS
+// ============================================================================
+
+model AppSetting {
+  id                     Int                     @id @default(1)
+  appName                String                  @default("FINCOP") @map("app_name") @db.VarChar(50)
+  appSubtitle            String                  @default("FINANSIAL UCOPP") @map("app_subtitle") @db.VarChar(100)
+  currencyCode           String                  @default("IDR") @map("currency_code") @db.VarChar(10)
+  theme                  ThemeMode               @default(LIGHT)
+  matchPrice             Decimal                 @default(1000.00) @map("match_price") @db.Decimal(18, 2)
+  reminderDaysJson       String                  @default("[7,3,1,0]") @map("reminder_days_json") @db.VarChar(100)
+  desktopNotifyEnabled   Boolean                 @default(true) @map("desktop_notify_enabled")
+  autoBackupEnabled      Boolean                 @default(false) @map("auto_backup_enabled")
+  autoBackupFrequency    BackupScheduleFrequency @default(DAILY) @map("auto_backup_frequency")
+  autoBackupTime         String                  @default("22:00") @map("auto_backup_time") @db.VarChar(10)
+  autoBackupDir          String?                 @map("auto_backup_dir") @db.VarChar(500)
+  backupRetentionCount   Int                     @default(14) @map("backup_retention_count")
+  lastBackupAt           DateTime?               @map("last_backup_at")
+  lastBackupStatus       BackupStatus?           @map("last_backup_status")
+  createdAt              DateTime                @default(now()) @map("created_at")
+  updatedAt              DateTime                @updatedAt @map("updated_at")
+
+  @@map("app_settings")
+}
+
+// ============================================================================
+// 2. WALLETS & INTER-WALLET TRANSFERS (MULTI-DOMPET)
+// ============================================================================
+
+model Wallet {
+  id             Int         @id @default(autoincrement())
+  name           String      @unique @db.VarChar(100)
+  type           WalletType
+  initialBalance Decimal     @default(0.00) @map("initial_balance") @db.Decimal(18, 2)
+  currentBalance Decimal     @default(0.00) @map("current_balance") @db.Decimal(18, 2)
+  description    String?     @db.Text
+  isActive       Boolean     @default(true) @map("is_active")
+  createdAt      DateTime    @default(now()) @map("created_at")
+  updatedAt      DateTime    @updatedAt @map("updated_at")
+
+  outgoingTransfers      WalletTransfer[]          @relation("TransferFromWallet")
+  incomingTransfers      WalletTransfer[]          @relation("TransferToWallet")
+  incomes                Income[]
+  expenses               Expense[]
+  defaultRecurringBills  RecurringExpense[]        @relation("RecurringDefaultWallet")
+  recurringPayments      RecurringExpensePayment[]
+  debts                  Debt[]
+  debtPayments           DebtPayment[]
+  donations              Donation[]
+  cashTransactions       CashTransaction[]
+
+  @@index([type, isActive])
+  @@map("wallets")
+}
+
+model WalletTransfer {
+  id           Int            @id @default(autoincrement())
+  fromWalletId Int            @map("from_wallet_id")
+  toWalletId   Int            @map("to_wallet_id")
+  amount       Decimal        @db.Decimal(18, 2)
+  transferDate DateTime       @map("transfer_date") @db.Date
+  notes        String?        @db.Text
+  status       TransferStatus @default(COMPLETED)
+  createdAt    DateTime       @default(now()) @map("created_at")
+  updatedAt    DateTime       @updatedAt @map("updated_at")
+
+  fromWallet   Wallet         @relation("TransferFromWallet", fields: [fromWalletId], references: [id], onDelete: Restrict)
+  toWallet     Wallet         @relation("TransferToWallet", fields: [toWalletId], references: [id], onDelete: Restrict)
+
+  @@index([fromWalletId])
+  @@index([toWalletId])
+  @@index([transferDate])
+  @@index([status])
+  @@map("wallet_transfers")
+}
+
+// ============================================================================
+// 3. INCOME CATEGORIES & INCOMES
+// ============================================================================
+
+model IncomeCategory {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique @db.VarChar(80)
+  slug      String   @unique @db.VarChar(80)
+  isSystem  Boolean  @default(false) @map("is_system")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  incomes   Income[]
+
+  @@map("income_categories")
+}
+
+model Income {
+  id              Int            @id @default(autoincrement())
+  transactionDate DateTime       @map("transaction_date") @db.Date
+  title           String         @db.VarChar(150)
+  categoryId      Int            @map("category_id")
+  walletId        Int            @map("wallet_id")
+  amount          Decimal        @db.Decimal(18, 2)
+  source          String         @db.VarChar(120)
+  notes           String?        @db.Text
+  isCancelled     Boolean        @default(false) @map("is_cancelled")
+  cancelledAt     DateTime?      @map("cancelled_at")
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @updatedAt @map("updated_at")
+
+  category        IncomeCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  wallet          Wallet         @relation(fields: [walletId], references: [id], onDelete: Restrict)
+
+  @@index([transactionDate])
+  @@index([categoryId])
+  @@index([walletId])
+  @@index([isCancelled])
+  @@map("incomes")
+}
+
+// ============================================================================
+// 4. EXPENSE CATEGORIES, EXPENSES & RECURRING BILLS
+// ============================================================================
+
+model ExpenseCategory {
+  id                Int                @id @default(autoincrement())
+  name              String             @db.VarChar(80)
+  slug              String             @unique @db.VarChar(80)
+  isRecurringType   Boolean            @default(false) @map("is_recurring_type")
+  isSystem          Boolean            @default(false) @map("is_system")
+  createdAt         DateTime           @default(now()) @map("created_at")
+  updatedAt         DateTime           @updatedAt @map("updated_at")
+
+  expenses          Expense[]
+  recurringExpenses RecurringExpense[]
+
+  @@index([isRecurringType])
+  @@map("expense_categories")
+}
+
+model Expense {
+  id              Int             @id @default(autoincrement())
+  transactionDate DateTime        @map("transaction_date") @db.Date
+  title           String          @db.VarChar(150)
+  categoryId      Int             @map("category_id")
+  walletId        Int             @map("wallet_id")
+  amount          Decimal         @db.Decimal(18, 2)
+  notes           String?         @db.Text
+  isRecurring     Boolean         @default(false) @map("is_recurring")
+  isCancelled     Boolean         @default(false) @map("is_cancelled")
+  cancelledAt     DateTime?       @map("cancelled_at")
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @updatedAt @map("updated_at")
+
+  category        ExpenseCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  wallet          Wallet          @relation(fields: [walletId], references: [id], onDelete: Restrict)
+
+  @@index([transactionDate])
+  @@index([categoryId])
+  @@index([walletId])
+  @@index([isCancelled])
+  @@map("expenses")
+}
+
+model RecurringExpense {
+  id              Int                       @id @default(autoincrement())
+  title           String                    @db.VarChar(150)
+  categoryId      Int                       @map("category_id")
+  defaultWalletId Int                       @map("default_wallet_id")
+  amount          Decimal                   @db.Decimal(18, 2)
+  startDate       DateTime                  @map("start_date") @db.Date
+  nextDueDate     DateTime                  @map("next_due_date") @db.Date
+  period          RecurringPeriod           @default(MONTHLY)
+  status          RecurringPaymentStatus    @default(PENDING)
+  remind7Days     Boolean                   @default(true) @map("remind_7_days")
+  remind3Days     Boolean                   @default(true) @map("remind_3_days")
+  remind1Day      Boolean                   @default(true) @map("remind_1_day")
+  remindOnDue     Boolean                   @default(true) @map("remind_on_due")
+  remindOverdue   Boolean                   @default(true) @map("remind_overdue")
+  isActive        Boolean                   @default(true) @map("is_active")
+  notes           String?                   @db.Text
+  createdAt       DateTime                  @default(now()) @map("created_at")
+  updatedAt       DateTime                  @updatedAt @map("updated_at")
+
+  category        ExpenseCategory           @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  defaultWallet   Wallet                    @relation("RecurringDefaultWallet", fields: [defaultWalletId], references: [id], onDelete: Restrict)
+  payments        RecurringExpensePayment[]
+
+  @@index([nextDueDate])
+  @@index([status])
+  @@index([defaultWalletId])
+  @@index([isActive])
+  @@map("recurring_expenses")
+}
+
+model RecurringExpensePayment {
+  id                 Int              @id @default(autoincrement())
+  recurringExpenseId Int              @map("recurring_expense_id")
+  walletId           Int              @map("wallet_id")
+  periodKey          String           @map("period_key") @db.VarChar(32)
+  dueDate            DateTime         @map("due_date") @db.Date
+  paidAt             DateTime         @map("paid_at")
+  amount             Decimal          @db.Decimal(18, 2)
+  notes              String?          @db.Text
+  createdAt          DateTime         @default(now()) @map("created_at")
+
+  recurringExpense   RecurringExpense @relation(fields: [recurringExpenseId], references: [id], onDelete: Restrict)
+  wallet             Wallet           @relation(fields: [walletId], references: [id], onDelete: Restrict)
+
+  @@unique([recurringExpenseId, periodKey])
+  @@index([walletId])
+  @@index([paidAt])
+  @@map("recurring_expense_payments")
+}
+
+// ============================================================================
+// 5. DEBTS & RECEIVABLES (UTANG & PIUTANG)
+// ============================================================================
+
+model Debt {
+  id              Int           @id @default(autoincrement())
+  partyName       String        @map("party_name") @db.VarChar(150)
+  type            DebtType
+  walletId        Int?          @map("wallet_id")
+  initialAmount   Decimal       @map("initial_amount") @db.Decimal(18, 2)
+  paidAmount      Decimal       @default(0.00) @map("paid_amount") @db.Decimal(18, 2)
+  remainingAmount Decimal       @map("remaining_amount") @db.Decimal(18, 2)
+  loanDate        DateTime      @map("loan_date") @db.Date
+  dueDate         DateTime      @map("due_date") @db.Date
+  status          DebtStatus    @default(UNPAID)
+  affectsCashNow  Boolean       @default(false) @map("affects_cash_now")
+  notes           String?       @db.Text
+  isCancelled     Boolean       @default(false) @map("is_cancelled")
+  cancelledAt     DateTime?     @map("cancelled_at")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+
+  wallet          Wallet?       @relation(fields: [walletId], references: [id], onDelete: Restrict)
+  payments        DebtPayment[]
+
+  @@index([type, status])
+  @@index([dueDate])
+  @@index([walletId])
+  @@index([isCancelled])
+  @@map("debts")
+}
+
+model DebtPayment {
+  id          Int      @id @default(autoincrement())
+  debtId      Int      @map("debt_id")
+  walletId    Int      @map("wallet_id")
+  paymentDate DateTime @map("payment_date") @db.Date
+  amount      Decimal  @db.Decimal(18, 2)
+  notes       String?  @db.Text
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  debt        Debt     @relation(fields: [debtId], references: [id], onDelete: Restrict)
+  wallet      Wallet   @relation(fields: [walletId], references: [id], onDelete: Restrict)
+
+  @@index([debtId])
+  @@index([walletId])
+  @@index([paymentDate])
+  @@map("debt_payments")
+}
+
+// ============================================================================
+// 6. LIVE STREAM DONATIONS & MABAR MATCH QUEUE
+// ============================================================================
+
+model Donation {
+  id            Int            @id @default(autoincrement())
+  nickname      String         @db.VarChar(100)
+  platform      StreamPlatform
+  walletId      Int            @map("wallet_id")
+  donatedAt     DateTime       @map("donated_at")
+  amount        Decimal        @db.Decimal(18, 2)
+  pricePerMatch Decimal        @default(1000.00) @map("price_per_match") @db.Decimal(18, 2)
+  matchCount    Int            @map("match_count")
+  remainder     Decimal        @default(0.00) @db.Decimal(18, 2)
+  notes         String?        @db.Text
+  isCancelled   Boolean        @default(false) @map("is_cancelled")
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+
+  wallet        Wallet         @relation(fields: [walletId], references: [id], onDelete: Restrict)
+  matchQueue    MatchQueue?
+
+  @@index([donatedAt])
+  @@index([platform])
+  @@index([walletId])
+  @@map("donations")
+}
+
+model MatchQueue {
+  id               Int            @id @default(autoincrement())
+  donationId       Int            @unique @map("donation_id")
+  nickname         String         @db.VarChar(100)
+  platform         StreamPlatform
+  totalMatches     Int            @map("total_matches")
+  completedMatches Int            @default(0) @map("completed_matches")
+  remainingMatches Int            @map("remaining_matches")
+  isPriority       Boolean        @default(false) @map("is_priority")
+  priorityOrder    Int            @default(0) @map("priority_order")
+  status           QueueStatus    @default(WAITING)
+  queuedAt         DateTime       @default(now()) @map("queued_at")
+  startedAt        DateTime?      @map("started_at")
+  completedAt      DateTime?      @map("completed_at")
+  cancelledAt      DateTime?      @map("cancelled_at")
+  updatedAt        DateTime       @updatedAt @map("updated_at")
+
+  donation         Donation       @relation(fields: [donationId], references: [id], onDelete: Restrict)
+  history          MatchHistory[]
+
+  @@index([status, isPriority, priorityOrder, queuedAt])
+  @@map("match_queues")
+}
+
+model MatchHistory {
+  id          Int        @id @default(autoincrement())
+  queueId     Int        @map("queue_id")
+  matchNumber Int        @map("match_number")
+  playedAt    DateTime   @default(now()) @map("played_at")
+  notes       String?    @db.Text
+
+  queue       MatchQueue @relation(fields: [queueId], references: [id], onDelete: Restrict)
+
+  @@unique([queueId, matchNumber])
+  @@index([playedAt])
+  @@map("match_history")
+}
+
+// ============================================================================
+// 7. CASH TRANSACTIONS LEDGER (SOURCE OF TRUTH SALDO MULTI-DOMPET)
+// ============================================================================
+
+model CashTransaction {
+  id              Int                  @id @default(autoincrement())
+  walletId        Int                  @map("wallet_id")
+  transactionDate DateTime             @map("transaction_date") @db.Date
+  direction       CashFlowDirection
+  classification  LedgerClassification
+  amount          Decimal              @db.Decimal(18, 2)
+  balanceAfter    Decimal              @map("balance_after") @db.Decimal(18, 2)
+  referenceType   CashReferenceType    @map("reference_type")
+  referenceId     Int                  @map("reference_id")
+  description     String               @db.VarChar(255)
+  isVoided        Boolean              @default(false) @map("is_voided")
+  voidedAt        DateTime?            @map("voided_at")
+  createdAt       DateTime             @default(now()) @map("created_at")
+
+  wallet          Wallet               @relation(fields: [walletId], references: [id], onDelete: Restrict)
+
+  @@index([walletId, isVoided, transactionDate])
+  @@index([classification])
+  @@index([referenceType, referenceId])
+  @@index([direction, isVoided])
+  @@map("cash_transactions")
+}
+
+// ============================================================================
+// 8. NOTIFICATIONS & BACKUP LOGS
+// ============================================================================
+
+model Notification {
+  id            Int              @id @default(autoincrement())
+  type          NotificationType
+  referenceType String           @map("reference_type") @db.VarChar(50)
+  referenceId   Int              @map("reference_id")
+  reminderKey   String           @map("reminder_key") @db.VarChar(64)
+  title         String           @db.VarChar(160)
+  message       String           @db.Text
+  isRead        Boolean          @default(false) @map("is_read")
+  triggeredAt   DateTime         @default(now()) @map("triggered_at")
+
+  @@unique([type, referenceType, referenceId, reminderKey])
+  @@index([isRead, triggeredAt])
+  @@map("notifications")
+}
+
+model BackupLog {
+  id            Int          @id @default(autoincrement())
+  backupType    BackupType   @map("backup_type")
+  fileName      String       @map("file_name") @db.VarChar(255)
+  filePath      String       @map("file_path") @db.VarChar(500)
+  fileSizeBytes BigInt       @default(0) @map("file_size_bytes")
+  status        BackupStatus
+  notes         String?      @db.Text
+  createdAt     DateTime     @default(now()) @map("created_at")
+
+  @@index([backupType, createdAt])
+  @@index([status])
+  @@map("backup_logs")
+}

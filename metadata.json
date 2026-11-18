@@ -1,0 +1,6 @@
+{
+  "name": "FINCOP — Finansial Ucopp",
+  "description": "Aplikasi pengelolaan keuangan pribadi desktop lokal dengan pencatatan pemasukan, pengeluaran rutin, utang piutang, donasi live stream, dan antrean mabar.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
