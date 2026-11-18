@@ -18,39 +18,41 @@ export function ToastContainer({ toasts, onDismiss }: ToastContainerProps) {
   return (
     <div
       aria-live="polite"
-      className="fixed bottom-5 right-5 z-50 flex w-full max-w-sm flex-col gap-2.5"
+      className="fixed bottom-4 right-4 z-50 flex w-full max-w-sm flex-col gap-2"
     >
       {toasts.map((toast) => {
         const Icon =
           toast.type === 'success' ? CheckCircle2 : toast.type === 'error' ? XCircle : Info;
-        const iconTone =
+        const iconColor =
           toast.type === 'success'
-            ? 'text-emerald-600 dark:text-emerald-400'
+            ? 'text-[#448361]'
             : toast.type === 'error'
-              ? 'text-rose-600 dark:text-rose-400'
-              : 'text-orange-600 dark:text-orange-400';
+              ? 'text-[#D44C47]'
+              : 'text-[#E87932]';
 
         return (
           <div
             key={toast.id}
-            className="flex items-start gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-lg dark:border-slate-800 dark:bg-slate-900"
+            className="flex items-start gap-2.5 rounded-[2px] border border-[#E9E9E7] bg-[#FFFFFF] px-3.5 py-3 dark:border-[#343434] dark:bg-[#202020]"
           >
-            <Icon className={`mt-0.5 h-5 w-5 shrink-0 ${iconTone}`} aria-hidden="true" />
+            <Icon className={`mt-0.5 h-4 w-4 shrink-0 ${iconColor}`} aria-hidden="true" />
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+              <p className="text-[13px] font-medium text-[#252525] dark:text-[#E6E6E6]">
                 {toast.title}
               </p>
               {toast.message ? (
-                <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{toast.message}</p>
+                <p className="mt-0.5 text-[12px] text-[#787774] dark:text-[#9B9B9B]">
+                  {toast.message}
+                </p>
               ) : null}
             </div>
             <button
               type="button"
               onClick={() => onDismiss(toast.id)}
               aria-label="Tutup notifikasi"
-              className="rounded-md p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+              className="rounded-[2px] p-1 text-[#787774] transition-colors hover:bg-[#F5F5F4] hover:text-[#252525] dark:text-[#9B9B9B] dark:hover:bg-[#252525] dark:hover:text-[#E6E6E6]"
             >
-              <X className="h-4 w-4" />
+              <X className="h-3.5 w-3.5" />
             </button>
           </div>
         );

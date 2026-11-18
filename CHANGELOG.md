@@ -2,6 +2,13 @@
 
 Semua perubahan penting pada proyek **FINCOP (Finansial Ucopp)** dicatat menggunakan format Conventional Commits.
 
+## [0.2.1] - 2026-11-18 (Design System)
+
+### Changed
+- Menerapkan FINCOP Design System terinspirasi Notion (`Inter`, radius `2px` untuk card/button/input/select/modal/dropdown/badge, `0px` untuk sidebar/table, serta palet warna Light/Dark Notion dengan aksen `#E87932`).
+- Menambahkan komponen UI reusable standar di `src/components/ui/` (`Button`, `Input`, `Select`, `Modal`, `DataTable`, `Badge`, `Dropdown`, `Tooltip`).
+- Memperbarui sidebar permanen yang dapat diciutkan dan header workspace dengan breadcrumb, pencarian, notifikasi, dan profil pengguna.
+
 ## [0.2.0] - 2026-11-18 (Fase 2)
 
 ### Added

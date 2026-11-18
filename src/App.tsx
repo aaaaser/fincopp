@@ -1,82 +1,83 @@
 import { Layers } from 'lucide-react';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { EmptyState } from './components/EmptyState';
 import { ToastContainer, type ToastItem } from './components/ToastContainer';
 import { useTheme } from './hooks/useTheme';
-import { MainLayout } from './layouts/MainLayout';
-import { StageOneSetupPage } from './pages/StageOneSetupPage';
-import type { NavSectionId } from './types/system';
+import { MainLayout, type HeaderNotificationItem } from './layouts/MainLayout';
+import { SystemFoundationView } from './pages/StageOneSetupPage';
+import { fetchLedgerSummary, fetchSystemHealth } from './services/apiClient';
+import type { LedgerSummaryData, NavSectionId, SystemHealthData } from './types/system';
 
-const STAGE_ROADMAP_INFO: Record<
-  Exclude<NavSectionId, 'stage1-setup'>,
-  { title: string; stage: string; description: string }
+const MODULE_PHASE_ROADMAP: Record<
+  Exclude<NavSectionId, 'settings'>,
+  { title: string; phase: string; description: string }
 > = {
-  wallets: {
-    title: 'Modul Multi-Dompet & Transfer',
-    stage: 'Fase 3',
-    description:
-      'Pengelolaan dompet Bank, Cash, dan E-wallet, pengaturan saldo awal, histori per dompet, serta transfer antar-dompet yang netral terhadap pemasukan/pengeluaran akan dibangun pada Fase 3.',
-  },
   dashboard: {
-    title: 'Dashboard Keuangan Utama',
-    stage: 'Fase 4',
+    title: 'Dashboard Keuangan',
+    phase: 'Fase 4',
     description:
-      'Ringkasan total saldo seluruh dompet, pemasukan dan pengeluaran bulanan, grafik arus kas, tagihan jatuh tempo, dan ringkasan antrean mabar akan dibangun pada Fase 4.',
+      'Menampilkan total saldo seluruh dompet, pemasukan dan pengeluaran bulan ini, grafik arus kas & kategori, tagihan jatuh tempo, dan ringkasan antrean mabar setelah Fase 3–4 selesai.',
+  },
+  wallets: {
+    title: 'Multi-Dompet & Transfer',
+    phase: 'Fase 3',
+    description:
+      'Pengelolaan dompet Bank, Cash, dan E-wallet, pengaturan saldo awal, histori transaksi per dompet, serta transfer antar-dompet atomik akan diimplementasikan pada Fase 3.',
   },
   incomes: {
-    title: 'Modul Pemasukan',
-    stage: 'Fase 4',
+    title: 'Manajemen Pemasukan',
+    phase: 'Fase 4',
     description:
-      'Pencatatan CRUD pemasukan dengan pemilihan dompet tujuan, filter kategori, pencarian, serta rekap bulanan dan tahunan akan dibangun pada Fase 4.',
+      'CRUD pemasukan dengan pemilihan dompet tujuan, filter tanggal/kategori/dompet, pencarian, serta rekap bulanan dan tahunan akan diimplementasikan pada Fase 4.',
   },
   expenses: {
-    title: 'Modul Pengeluaran & Tagihan Rutin',
-    stage: 'Fase 5',
+    title: 'Manajemen Pengeluaran',
+    phase: 'Fase 5',
     description:
-      'Pengeluaran rutin dan tidak rutin per dompet, jadwal tagihan otomatis, anti pembayaran ganda, serta pengingat jatuh tempo akan dibangun pada Fase 5.',
+      'Pencatatan pengeluaran tidak rutin per dompet sumber pembayaran beserta filter dan pencarian akan diimplementasikan pada Fase 5.',
+  },
+  'recurring-expenses': {
+    title: 'Pengeluaran Rutin & Pengingat',
+    phase: 'Fase 5',
+    description:
+      'Jadwal tagihan mingguan/bulanan/tahunan, konfirmasi pembayaran tanpa mengurangi saldo sebelum dibayar, anti pembayaran ganda, serta pengingat jatuh tempo akan diimplementasikan pada Fase 5.',
   },
   debts: {
-    title: 'Modul Utang & Piutang',
-    stage: 'Fase 6',
+    title: 'Utang dan Piutang',
+    phase: 'Fase 6',
     description:
-      'Manajemen utang dan piutang, pembayaran cicilan/pelunasan per dompet, dan pembaruan ledger atomik akan dibangun pada Fase 6.',
+      'Pencatatan utang dan piutang, pembayaran cicilan/pelunasan bertahap per dompet, serta pembaruan buku kas atomik akan diimplementasikan pada Fase 6.',
   },
   donations: {
-    title: 'Modul Donasi Live Stream',
-    stage: 'Fase 7',
+    title: 'Donasi Live Stream',
+    phase: 'Fase 7',
     description:
-      'Input donasi manual TikTok/YouTube ke dompet penerimaan dan konversi otomatis 1 match = Rp1.000 beserta sisa nominal akan dibangun pada Fase 7.',
+      'Input donasi manual TikTok/YouTube ke dompet penerimaan dengan konversi otomatis 1 match = Rp1.000 beserta sisa nominal akan diimplementasikan pada Fase 7.',
   },
   queue: {
-    title: 'Modul Antrean Mabar FIFO & Prioritas',
-    stage: 'Fase 8',
+    title: 'Antrean Mabar FIFO & Prioritas',
+    phase: 'Fase 8',
     description:
-      'Sistem antrean FIFO, penandaan prioritas manual, penyelesaian match berbasis database transaction, dan riwayat match akan dibangun pada Fase 8.',
+      'Antrean mabar FIFO otomatis dari donasi, prioritas manual, penyelesaian match dengan proteksi concurrency, dan riwayat match akan diimplementasikan pada Fase 8.',
   },
   reports: {
-    title: 'Modul Laporan & Ekspor',
-    stage: 'Fase 9',
+    title: 'Laporan Keuangan & Ekspor',
+    phase: 'Fase 9',
     description:
-      'Laporan arus kas, saldo per dompet, transfer antar-dompet, statistik donasi & match, serta ekspor CSV, Excel, dan PDF akan dibangun pada Fase 9.',
-  },
-  notifications: {
-    title: 'Modul Notifikasi Desktop',
-    stage: 'Fase 10',
-    description:
-      'Pengingat desktop Electron Notification API untuk tagihan rutin, utang, dan piutang dengan deduplikasi periode akan dibangun pada Fase 10.',
-  },
-  backup: {
-    title: 'Modul Backup & Restore Database',
-    stage: 'Fase 11',
-    description:
-      'Backup manual dan terjadwal otomatis dengan kebijakan retensi serta restore dengan backup pengaman akan dibangun pada Fase 11.',
+      'Laporan pemasukan, pengeluaran, saldo per dompet, transfer internal, utang/piutang, statistik match, dan ekspor CSV/Excel/PDF akan diimplementasikan pada Fase 9.',
   },
 };
 
 export default function App() {
   const { theme, toggleTheme } = useTheme();
-  const [activeSection, setActiveSection] = useState<NavSectionId>('stage1-setup');
+  const [activeSection, setActiveSection] = useState<NavSectionId>('settings');
+  const [globalSearch, setGlobalSearch] = useState<string>('');
   const [toasts, setToasts] = useState<ToastItem[]>([]);
+
+  const [health, setHealth] = useState<SystemHealthData | null>(null);
+  const [ledgerSummary, setLedgerSummary] = useState<LedgerSummaryData | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
   const handleNotify = useCallback(
     (toast: { type: 'success' | 'error' | 'info'; title: string; message?: string }) => {
@@ -89,6 +90,62 @@ export default function App() {
     []
   );
 
+  const loadSystemStatus = useCallback(
+    async (showToast = false) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const [healthData, ledgerData] = await Promise.all([
+          fetchSystemHealth(),
+          fetchLedgerSummary(),
+        ]);
+        setHealth(healthData);
+        setLedgerSummary(ledgerData);
+        if (showToast) {
+          handleNotify({
+            type: healthData.database.connected ? 'success' : 'info',
+            title: healthData.database.connected
+              ? 'Koneksi MySQL 8 & Ledger Terverifikasi'
+              : 'Status Server Diperbarui',
+            message: healthData.database.message,
+          });
+        }
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Gagal memuat status sistem.';
+        setError(msg);
+        if (showToast) {
+          handleNotify({ type: 'error', title: 'Pemeriksaan Gagal', message: msg });
+        }
+      } finally {
+        setLoading(false);
+      }
+    },
+    [handleNotify]
+  );
+
+  useEffect(() => {
+    void loadSystemStatus(false);
+  }, [loadSystemStatus]);
+
+  const headerNotifications = useMemo<HeaderNotificationItem[]>(() => {
+    const items: HeaderNotificationItem[] = [];
+    if (health) {
+      items.push({
+        id: 'mysql-status',
+        title: health.database.connected ? 'MySQL 8 Terhubung' : 'MySQL 8 Belum Terhubung',
+        detail: health.database.message,
+        tone: health.database.connected ? 'success' : 'warning',
+      });
+    }
+    items.push({
+      id: 'stage-status',
+      title: 'Fase 1 & Fase 2 Aktif',
+      detail: 'Skema 17 tabel, migrasi awal, sistem ledger, dan Notion design system siap.',
+      tone: 'neutral',
+    });
+    return items;
+  }, [health]);
+
   const handleDismissToast = useCallback((id: string) => {
     setToasts((prev) => prev.filter((item) => item.id !== id));
   }, []);
@@ -99,17 +156,45 @@ export default function App() {
       onSelectSection={setActiveSection}
       theme={theme}
       onToggleTheme={toggleTheme}
+      globalSearch={globalSearch}
+      onGlobalSearchChange={(val) => {
+        setGlobalSearch(val);
+        if (activeSection !== 'settings' && val.trim().length > 0) {
+          setActiveSection('settings');
+        }
+      }}
+      notifications={headerNotifications}
     >
-      {activeSection === 'stage1-setup' ? (
-        <StageOneSetupPage onNotify={handleNotify} />
-      ) : (
-        <EmptyState
-          icon={Layers}
-          title={`${STAGE_ROADMAP_INFO[activeSection].title} (${STAGE_ROADMAP_INFO[activeSection].stage})`}
-          description={STAGE_ROADMAP_INFO[activeSection].description}
-          actionLabel="Kembali ke Fondasi & Ledger"
-          onAction={() => setActiveSection('stage1-setup')}
+      {activeSection === 'settings' ? (
+        <SystemFoundationView
+          health={health}
+          ledgerSummary={ledgerSummary}
+          loading={loading}
+          error={error}
+          searchQuery={globalSearch}
+          onSearchQueryChange={setGlobalSearch}
+          onRefresh={() => void loadSystemStatus(true)}
+          onNotify={handleNotify}
         />
+      ) : (
+        <div className="space-y-6">
+          <div className="border-b border-[#E9E9E7] pb-4 dark:border-[#343434]">
+            <p className="text-[12px] font-medium text-[#787774] dark:text-[#9B9B9B]">
+              Roadmap Implementasi · {MODULE_PHASE_ROADMAP[activeSection].phase}
+            </p>
+            <h2 className="mt-1 text-[28px] font-semibold leading-[1.25] tracking-[-0.02em] text-[#252525] dark:text-[#E6E6E6]">
+              {MODULE_PHASE_ROADMAP[activeSection].title}
+            </h2>
+          </div>
+
+          <EmptyState
+            icon={Layers}
+            title={`Modul Siap Dikembangkan di ${MODULE_PHASE_ROADMAP[activeSection].phase}`}
+            description={MODULE_PHASE_ROADMAP[activeSection].description}
+            actionLabel="Buka Sistem & Database (Fase 1–2)"
+            onAction={() => setActiveSection('settings')}
+          />
+        </div>
       )}
 
       <ToastContainer toasts={toasts} onDismiss={handleDismissToast} />

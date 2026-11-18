@@ -1,4 +1,5 @@
 import type { LucideIcon } from 'lucide-react';
+import { Button } from './ui/Button';
 
 interface EmptyStateProps {
   icon: LucideIcon;
@@ -16,20 +17,18 @@ export function EmptyState({
   onAction,
 }: EmptyStateProps) {
   return (
-    <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 bg-white px-6 py-12 text-center dark:border-slate-700 dark:bg-slate-900">
-      <div className="rounded-xl bg-orange-50 p-3 text-orange-600 dark:bg-orange-950/50 dark:text-orange-400">
-        <Icon className="h-6 w-6" aria-hidden="true" />
-      </div>
-      <h3 className="mt-4 text-base font-semibold text-slate-900 dark:text-slate-100">{title}</h3>
-      <p className="mt-1.5 max-w-md text-sm text-slate-500 dark:text-slate-400">{description}</p>
+    <div className="flex flex-col items-center justify-center rounded-[2px] border border-[#E9E9E7] bg-[#F7F7F5] px-6 py-12 text-center dark:border-[#343434] dark:bg-[#202020]">
+      <Icon className="h-6 w-6 text-[#787774] dark:text-[#9B9B9B]" aria-hidden="true" />
+      <h3 className="mt-3 text-[16px] font-semibold text-[#252525] dark:text-[#E6E6E6]">{title}</h3>
+      <p className="mt-1.5 max-w-md text-[14px] text-[#787774] dark:text-[#9B9B9B]">
+        {description}
+      </p>
       {actionLabel && onAction ? (
-        <button
-          type="button"
-          onClick={onAction}
-          className="mt-5 inline-flex items-center justify-center rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 whitespace-nowrap shrink-0 dark:focus-visible:ring-offset-slate-900"
-        >
-          {actionLabel}
-        </button>
+        <div className="mt-5">
+          <Button variant="primary" onClick={onAction}>
+            {actionLabel}
+          </Button>
+        </div>
       ) : null}
     </div>
   );

@@ -1,8 +1,45 @@
-export const FINCOP_COLOR_TOKENS = {
-  primary: '#F97316',
-  primaryHover: '#EA580C',
-  inflow: '#16A34A',
-  outflow: '#DC2626',
-  warning: '#D97706',
-  transfer: '#0284C7',
+export const FINCOP_DESIGN_TOKENS = {
+  colors: {
+    light: {
+      mainBg: '#FFFFFF',
+      sidebarBg: '#F7F7F5',
+      secondaryBg: '#F5F5F4',
+      primaryText: '#252525',
+      secondaryText: '#787774',
+      border: '#E9E9E7',
+    },
+    dark: {
+      mainBg: '#191919',
+      sidebarBg: '#202020',
+      secondaryBg: '#252525',
+      primaryText: '#E6E6E6',
+      secondaryText: '#9B9B9B',
+      border: '#343434',
+    },
+    semantic: {
+      accent: '#E87932',
+      success: '#448361',
+      danger: '#D44C47',
+      warning: '#CB912F',
+    },
+  },
+  radii: {
+    card: '2px',
+    button: '2px',
+    input: '2px',
+    select: '2px',
+    modal: '2px',
+    dropdown: '2px',
+    badge: '2px',
+    sidebar: '0px',
+    table: '0px',
+  },
+  typography: {
+    fontFamily: 'Inter, system-ui, sans-serif',
+    pageTitle: '28px',
+    sectionTitle: '18px',
+    body: '14px',
+    table: '13px',
+    metadata: '12px',
+  },
 } as const;

@@ -52,14 +52,13 @@ export interface LedgerSummaryData {
 }
 
 export type NavSectionId =
-  | 'stage1-setup'
-  | 'wallets'
   | 'dashboard'
+  | 'wallets'
   | 'incomes'
   | 'expenses'
+  | 'recurring-expenses'
   | 'debts'
   | 'donations'
   | 'queue'
   | 'reports'
-  | 'notifications'
-  | 'backup';
+  | 'settings';

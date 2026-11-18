@@ -14,7 +14,7 @@ function createMainWindow(): void {
     minWidth: 1080,
     minHeight: 720,
     title: 'FINCOP — Finansial Ucopp',
-    backgroundColor: '#f8fafc',
+    backgroundColor: '#ffffff',
     autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
