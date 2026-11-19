@@ -2,6 +2,12 @@
 
 Semua perubahan penting pada proyek **FINCOP (Finansial Ucopp)** dicatat menggunakan format Conventional Commits.
 
+## [0.3.0] - 2026-11-18 (Tahap 1 — UI Prototype)
+
+### Added
+- Implementasi penuh UI Prototype **FINCOP (Finansial Ucopp)** dengan 13 halaman lengkap berbasis `HashRouter` dan Notion-inspired design system (`2px` radius komponen, `0px` radius sidebar & tabel).
+- State lokal interaktif (`FincopStoreProvider`) dengan data dummy Rupiah realistis, validasi formulir **React Hook Form + Zod**, pencarian cepat **`Ctrl + K`**, Quick Add di header, serta aksi simulasi CRUD untuk Dompet, Pemasukan, Pengeluaran Rutin/Tidak Rutin, Transfer, Utang & Piutang, Donasi Live Stream, Antrean Mabar FIFO & Prioritas, Riwayat Mabar, Laporan, Notifikasi, Backup & Restore, dan Pengaturan.
+
 ## [0.2.1] - 2026-11-18 (Design System)
 
 ### Changed

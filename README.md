@@ -161,28 +161,25 @@ npm run db:check
 
 ---
 
-## 14. Cara Menggunakan Setiap Modul
+## 14. Status Tahap Saat Ini — UI Prototype (Tahap 1)
 
-- **Fondasi & Ledger (Fase 1–2)**: Memeriksa status Express API, koneksi MySQL 8 lokal, seluruh 17 tabel skema Prisma, serta audit konsistensi `cash_transactions` terhadap saldo dompet.
-- **Dashboard & Laporan**: Memantau ringkasan saldo seluruh dompet, arus kas bulanan, dan mengekspor laporan (tersedia bertahap mulai Fase 4 & Fase 9).
+Saat ini antarmuka **FINCOP (Finansial Ucopp)** berjalan sebagai **UI Prototype interaktif lengkap (13 halaman)** dengan data dummy Rupiah (`IDR`) yang dikelola pada *local state* (`FincopStoreProvider`) tanpa koneksi langsung ke MySQL 8:
 
----
+1. **Dashboard (`/`)**: Total saldo gabungan, pemasukan & pengeluaran bulanan, total utang/piutang, total donasi live stream, antrean & sisa match, grafik arus kas vs kategori, saldo dompet, tagihan jatuh tempo, transaksi terbaru, pengingat utang/piutang, dan antrean mabar.
+2. **Dompet (`/dompet`)**: Multi-dompet (`Bank`, `Tunai`, `E-wallet`, `Lainnya`), tambah/edit dompet, filter jenis, dan modal histori transaksi per dompet.
+3. **Pemasukan (`/pemasukan`)**: CRUD pemasukan, filter kategori/dompet/pencarian, dan rekap bulanan serta tahunan.
+4. **Pengeluaran (`/pengeluaran`)**: Tab *Pengeluaran Tidak Rutin* & *Pengeluaran Rutin & Pengingat*, badge `Terlambat` / `Mendekati` / `Lunas`, serta tombol `Tandai Sudah Dibayar` yang memperbarui saldo dan menjadwalkan periode berikutnya.
+5. **Transfer Dompet (`/transfer`)**: Transfer saldo antar-dompet dengan validasi saldo dan dompet asal/tujuan berbeda tanpa memengaruhi total pemasukan/pengeluaran.
+6. **Utang & Piutang (`/utang-piutang`)**: Tab Utang & Piutang, modal detail riwayat cicilan, dan modal bayar cicilan/pelunasan.
+7. **Donasi Live Stream (`/donasi`)**: Input manual TikTok/YouTube, pratinjau konversi otomatis (`1 match = Rp1.000` + sisa nominal), dan sinkronisasi saldo dompet penerima tanpa pencatatan ganda ke Pemasukan.
+8. **Antrean Mabar (`/antrean-mabar`)**: Antrean FIFO + prioritas manual, `Mulai Match`, `Selesaikan Match` manual tanpa timer, geser urutan, dan `Batalkan Antrean`.
+9. **Riwayat Mabar (`/riwayat-mabar`)**: Arsip match selesai & dibatalkan beserta filter tanggal dan platform.
+10. **Laporan (`/laporan`)**: Filter preset (`Hari Ini`, `Minggu Ini`, `Bulan Ini`, `Tahun Ini`, `Rentang Khusus`), grafik kategori, ringkasan saldo/utang/match, dan simulasi ekspor CSV/Excel/PDF.
+11. **Notifikasi (`/notifikasi`)**: Pengelompokan tagihan terlambat, tagihan mendekati jatuh tempo, utang/piutang jatuh tempo, dan tandai dibaca.
+12. **Backup & Restore (`/backup-restore`)**: Simulasi backup manual, pengaturan jadwal backup otomatis, riwayat backup, dan simulasi restore dengan konfirmasi pengaman.
+13. **Pengaturan (`/pengaturan`)**: Profil aplikasi, tema Light/Dark, mata uang IDR, preferensi notifikasi, harga per match, pengaturan FIFO, serta tombol **Reset Data Dummy**.
 
-## 15. Cara Mengelola Dompet
-
-*(Tersedia penuh pada Fase 3)* — Pengguna dapat menambah dompet bertipe Bank, Cash, E-wallet, atau Lainnya, mengatur saldo awal saat pembuatan, melihat histori per dompet, dan melakukan transfer antar-dompet tanpa memengaruhi total saldo keseluruhan maupun angka pemasukan/pengeluaran.
-
----
-
-## 16. Cara Mencatat Transaksi
-
-*(Tersedia penuh pada Fase 4–7)* — Setiap pemasukan, pengeluaran, pembayaran tagihan rutin, cicilan utang/piutang, maupun donasi wajib memilih dompet terkait dan dicatat atomik ke `cash_transactions`.
-
----
-
-## 17. Cara Mengelola Antrean Mabar
-
-*(Tersedia penuh pada Fase 8)* — Donasi otomatis membentuk antrean match (`FLOOR(Nominal / 1.000)`). Pengguna dapat mengaktifkan prioritas manual, memulai match, dan menekan **Selesaikan Match** secara manual dengan proteksi transaksi ganda.
+*Pintasan Keyboard*: Tekan **`Ctrl + K`** (atau **`Cmd + K`**) untuk membuka pencarian cepat lintas halaman dan transaksi, atau gunakan tombol **`+ Tambah`** di header untuk Quick Add.
 
 ---
 

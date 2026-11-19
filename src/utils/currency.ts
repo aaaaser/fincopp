@@ -1,6 +1,5 @@
 /**
- * Utilitas mata uang Rupiah (IDR) berbasis integer/sen (tanpa floating point)
- * agar perhitungan keuangan akurat 100%.
+ * Utilitas format mata uang Rupiah (IDR) dan kalkulasi match donasi.
  */
 
 export function parseDecimalToCents(value: string | number): number {
@@ -28,10 +27,10 @@ export function centsToDecimalString(cents: number): string {
 }
 
 export function formatRupiah(amount: string | number): string {
-  const cents = typeof amount === 'number' && Number.isInteger(amount)
-    ? amount * 100
-    : parseDecimalToCents(amount);
+  const numeric = typeof amount === 'number' ? amount : Number(amount);
+  if (Number.isNaN(numeric)) return 'Rp0';
 
+  const cents = Math.round(numeric * 100);
   const isNegative = cents < 0;
   const absCents = Math.abs(cents);
   const whole = Math.floor(absCents / 100);
